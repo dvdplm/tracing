@@ -214,7 +214,7 @@ where
     }
 
     /// Returns the span's name,
-    pub fn name(&self) -> Cow<'static, str> {
+    pub fn name(&self) -> &str {
         self.metadata().name()
     }
 
