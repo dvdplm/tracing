@@ -11,6 +11,7 @@
 //!
 //! [`Subscribe`]: crate::Subscribe
 use crate::subscribe;
+#[cfg(not(feature = "parking_lot"))]
 use crate::sync::RwLock;
 
 use std::{
@@ -30,13 +31,19 @@ pub struct Subscriber<S> {
     // eventually wish to replace it with a sharded lock implementation on top
     // of our internal `RwLock` wrapper type. If possible, we should profile
     // this first to determine if it's necessary.
+    #[cfg(not(feature = "parking_lot"))]
     inner: Arc<RwLock<S>>,
+    #[cfg(feature = "parking_lot")]
+    inner: Arc<parking_lot::RwLock<S>>,
 }
 
 /// Allows reloading the state of an associated `Collect`.
 #[derive(Debug)]
 pub struct Handle<S> {
+    #[cfg(not(feature = "parking_lot"))]
     inner: Weak<RwLock<S>>,
+    #[cfg(feature = "parking_lot")]
+    inner: Weak<parking_lot::RwLock<S>>,
 }
 
 /// Indicates that an error occurred when reloading a subscriber.
@@ -124,7 +131,10 @@ impl<S> Subscriber<S> {
     /// the inner type to be modified at runtime.
     pub fn new(inner: S) -> (Self, Handle<S>) {
         let this = Self {
+            #[cfg(not(feature = "parking_lot"))]
             inner: Arc::new(RwLock::new(inner)),
+            #[cfg(feature = "parking_lot")]
+            inner: Arc::new(parking_lot::RwLock::new(inner)),
         };
         let handle = this.handle();
         (this, handle)

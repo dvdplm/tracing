@@ -101,8 +101,14 @@ pub struct EnvFilter {
     statics: directive::Statics,
     dynamics: directive::Dynamics,
     has_dynamics: bool,
+    #[cfg(not(feature = "parking_lot"))]
     by_id: RwLock<HashMap<span::Id, directive::SpanMatcher>>,
+    #[cfg(feature = "parking_lot")]
+    by_id: parking_lot::RwLock<HashMap<span::Id, directive::SpanMatcher>>,
+    #[cfg(not(feature = "parking_lot"))]
     by_cs: RwLock<HashMap<callsite::Identifier, directive::CallsiteMatcher>>,
+    #[cfg(feature = "parking_lot")]
+    by_cs: parking_lot::RwLock<HashMap<callsite::Identifier, directive::CallsiteMatcher>>,
 }
 
 thread_local! {
@@ -344,8 +350,14 @@ impl EnvFilter {
             statics,
             dynamics,
             has_dynamics,
+            #[cfg(not(feature = "parking_lot"))]
             by_id: RwLock::new(HashMap::new()),
+            #[cfg(not(feature = "parking_lot"))]
             by_cs: RwLock::new(HashMap::new()),
+            #[cfg(feature = "parking_lot")]
+            by_id: parking_lot::RwLock::new(HashMap::new()),
+            #[cfg(feature = "parking_lot")]
+            by_cs: parking_lot::RwLock::new(HashMap::new()),
         }
     }
 
@@ -406,12 +418,16 @@ impl<S: Collect> Subscribe<S> for EnvFilter {
         if self.has_dynamics && self.dynamics.max_level >= *level {
             if metadata.is_span() {
                 // If the metadata is a span, see if we care about its callsite.
+                #[cfg(not(feature = "parking_lot"))]
                 let enabled_by_cs = self
                     .by_cs
                     .read()
                     .ok()
                     .map(|by_cs| by_cs.contains_key(&metadata.callsite()))
                     .unwrap_or(false);
+                #[cfg(feature = "parking_lot")]
+                let enabled_by_cs = self.by_cs.read().contains_key(&metadata.callsite());
+
                 if enabled_by_cs {
                     return true;
                 }

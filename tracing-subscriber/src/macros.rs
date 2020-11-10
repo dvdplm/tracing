@@ -1,3 +1,4 @@
+#[cfg(not(feature = "parking_lot"))]
 macro_rules! try_lock {
     ($lock:expr) => {
         try_lock!($lock, else return)
@@ -10,6 +11,15 @@ macro_rules! try_lock {
         } else {
             panic!("lock poisoned")
         }
+    };
+}
+#[cfg(feature = "parking_lot")]
+macro_rules! try_lock {
+    ($lock:expr) => {
+        $lock
+    };
+    ($lock:expr, else $els:expr) => {
+        $lock
     };
 }
 

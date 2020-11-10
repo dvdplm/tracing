@@ -10,7 +10,10 @@ pub(crate) struct Local<T> {
     // eventually wish to replace it with a sharded lock implementation on top
     // of our internal `RwLock` wrapper type. If possible, we should profile
     // this first to determine if it's necessary.
+    #[cfg(not(feature = "parking_lot"))]
     inner: RwLock<Inner<T>>,
+    #[cfg(feature = "parking_lot")]
+    inner: parking_lot::RwLock<Inner<T>>,
 }
 
 type Inner<T> = Vec<Option<UnsafeCell<T>>>;
@@ -33,7 +36,10 @@ impl<T> Local<T> {
         let mut data = Vec::with_capacity(len);
         data.resize_with(len, || None);
         Local {
+            #[cfg(not(feature = "parking_lot"))]
             inner: RwLock::new(data),
+            #[cfg(feature = "parking_lot")]
+            inner: parking_lot::RwLock::new(data),
         }
     }
 
